@@ -10,12 +10,14 @@ npm run build     # type check and build; must pass when you hand in
 
 Needs Node.js 20.19 or newer (22 or 24 also work).
 
-- `src/taskReducer.ts`: the reducer. You change it: the state becomes `{ tasks, filter }`
-  and it gets two new actions (see the handout).
-- {
+- `src/taskReducer.ts`: the reducer. You change it: the st{
   "name": "task-manager-assignment3",
   "private": true,
-  "version" pro  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc  pro  "private": true,
   "version": "0.0fi  "version": "0.0ho  "type": "module",
 od  "scripts": {
    u     "dev": "vca    "build": "tscer    "preview": "vite preview"
@@ -23,11 +25,8 @@ od  "scripts": {
   "dep|   },
   "dependencies": {
    t   "e     "react": "^19.g;    "react-dom": "^19.:   },
-  }
-
-export type Actio  =
-     "@types/react": " s    g; title: string }
-  | { ty    "@vitejs/plugin-react": "^6.1 t    "typescript": "~6.0.3",
+  "devDependencies":io  "
+     "@types/react": " s    "@types/react-dom": "^19.ty    "@vitejs/plugin-react": "^6.1 t    "typescript": "~6.0.3",
     "vitEX    "vite": "^8.3.4"
   }
 }=   }

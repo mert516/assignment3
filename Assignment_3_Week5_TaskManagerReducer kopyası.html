@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Assignment 3: Task Manager with a Reducer (MIS 233)</title>
+<meta name="description" content="MIS 233 Web Based Application Programming, Assignment 3: grow a Task Manager reducer with a status filter and a clear-done action, for 100 points. Optional bonuses are worth 5 points or more each: undo, reducer tests, and a written explanation.">
+<style>
+:root{
+  color-scheme:light only;
+  --page:#ffffff;
+  --wash:#f1f5f9;
+  --ink:#1b2a41;
+  --muted:#4d5f76;
+  --rule:#d3dce8;
+  --accent:#1a58a5;
+  --accent-wash:#e7f0fb;
+  --on-accent:#ffffff;
+  --code-bg:#f4f7fb;
+  --term-bg:#0d1726;
+  --term-ink:#d7e3f3;
+  --term-dim:#8fa4bf;
+  --term-todo:#a9bdd6;
+  --term-wip:#ffd27a;
+  --term-done:#8fe3b5;
+  --todo-bg:#e4eaf2;
+  --todo-ink:#3c4d64;
+  --wip-bg:#ffedc7;
+  --wip-ink:#6e3c00;
+  --done-bg:#d6f0de;
+  --done-ink:#115228;
+  --k:#6a3fb0;
+  --s:#0b6b50;
+  --c:#546880;
+  --n:#954600;
+  --t:#0a58a3;
+  --f:#546880;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,"Noto Serif","DejaVu Serif",serif;
+  --sans:"Avenir Next","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+  --mono:ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html{background:#fff;-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+body{margin:0;background:transparent;color:var(--ink);font:1.0625rem/1.65 var(--serif);text-rendering:optimizeLegibility}
+a{color:var(--accent);text-underline-offset:.18em}
+a:hover{text-decoration-thickness:2px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:3px}
+p{margin:0 0 1rem}
+strong{font-weight:700}
+.skip{position:absolute;left:-999px;top:0;background:var(--accent);color:var(--on-accent);padding:.6rem 1rem;font:600 .95rem var(--sans);z-index:10}
+.skip:focus{left:0}
+
+.shell{max-width:68rem;margin:0 auto;padding:1.5rem 1.25rem 5rem;display:grid;grid-template-columns:minmax(0,1fr);gap:1.5rem}
+main{min-width:0}
+@media (min-width:62.5rem){
+  .shell{grid-template-columns:13.5rem minmax(0,45rem);gap:3.5rem;padding-top:3rem}
+}
+
+/* contents */
+.rail{font:.9rem/1.45 var(--sans)}
+.rail details{border:1px solid var(--rule);border-radius:8px;background:var(--wash);padding:.35rem .9rem}
+.rail summary{font-weight:700;color:var(--ink);padding:.3rem 0;cursor:pointer}
+.rail ol,.rail ul{list-style:none;margin:.35rem 0 0;padding:0}
+.rail ul{padding-left:.8rem;margin:.1rem 0 .4rem;border-left:1px solid var(--rule)}
+.rail a{display:block;padding:.22rem .5rem;margin-left:-.5rem;color:var(--muted);text-decoration:none;border-radius:4px}
+.rail a:hover{color:var(--ink);background:var(--wash)}
+.rail a[aria-current]{color:var(--accent);font-weight:650}
+@media (min-width:62.5rem){
+  .rail{position:sticky;top:2rem;align-self:start;max-height:calc(100vh - 4rem);overflow:auto}
+  .rail details{border:0;background:none;padding:0}
+  .rail summary{pointer-events:none;list-style:none;cursor:default}
+  .rail summary::-webkit-details-marker{display:none}
+}
+
+/* headings */
+h1,h2,h3,h4{font-family:var(--sans);line-height:1.2;letter-spacing:-.012em;margin:0;color:var(--ink)}
+h1{font-size:clamp(2.1rem,1.4rem + 2.8vw,3.1rem);font-weight:760;letter-spacing:-.028em;text-wrap:balance}
+h2{font-size:1.65rem;font-weight:730;margin:3.75rem 0 1.1rem;padding-top:1.6rem;border-top:1px solid var(--rule);scroll-margin-top:1rem}
+h3{font-size:1.2rem;font-weight:690;margin:2.4rem 0 .65rem;scroll-margin-top:1rem}
+h4{font-size:1.02rem;font-weight:690;margin:1.7rem 0 .4rem}
+.tag{display:inline-block;font:650 .76rem/1 var(--sans);letter-spacing:.01em;padding:.3rem .62rem;border-radius:999px;vertical-align:.28em;margin-left:.7rem;white-space:nowrap}
+.tag.req{border:1.5px solid var(--accent);color:var(--accent)}
+.tag.bonus{border:1.5px solid var(--accent);background:var(--accent);color:var(--on-accent)}
+
+/* hero */
+.hero .course{font:600 .95rem/1.4 var(--sans);color:var(--muted);margin:0 0 .8rem}
+.hero .lede{font-size:1.2rem;line-height:1.58;max-width:38rem;margin:1.1rem 0 0}
+.terminal{margin:2.1rem 0 0}
+.terminal pre{margin:0;background:var(--term-bg);color:var(--term-ink);border-radius:10px;padding:1.1rem 1.25rem;font:.875rem/1.65 var(--mono);overflow:auto}
+.terminal .prompt{color:var(--term-dim)}
+.terminal .st-todo{color:var(--term-todo)}
+.terminal .st-wip{color:var(--term-wip);font-weight:700}
+.terminal .st-done{color:var(--term-done)}
+@media (max-width:40rem){.terminal pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.8rem}}
+.terminal figcaption{font:.9rem/1.5 var(--sans);color:var(--muted);margin-top:.65rem;max-width:38rem}
+.facts{display:grid;grid-template-columns:max-content 1fr;gap:.4rem 1.6rem;margin:2.1rem 0 0;font-size:.98rem;line-height:1.55}
+.facts dt{font:650 .9rem/1.7 var(--sans);color:var(--muted)}
+.facts dd{margin:0}
+@media (max-width:34rem){.facts{grid-template-columns:1fr;gap:0}.facts dd{margin-bottom:.7rem}}
+
+/* terms */
+.terms{display:grid;grid-template-columns:repeat(auto-fit,minmax(18rem,1fr));gap:0 2.2rem;margin:1rem 0 0;font-size:.95rem;line-height:1.5}
+.terms div{padding:.45rem 0;border-bottom:1px solid var(--rule)}
+.terms dt{display:inline;font:700 .93rem var(--sans)}
+.terms dt::after{content:": "}
+.terms dd{display:inline;margin:0}
+
+/* tables */
+.table-wrap{overflow-x:auto;margin:1.3rem 0}
+table{border-collapse:collapse;width:100%;font:.94rem/1.5 var(--sans)}
+th,td{text-align:left;vertical-align:top;padding:.65rem .85rem .65rem 0;border-bottom:1px solid var(--rule)}
+th{font-weight:650;color:var(--muted);border-bottom:2px solid var(--ink);white-space:nowrap}
+td:last-child,th:last-child{padding-right:0}
+.glance td:last-child,.glance th:last-child{white-space:nowrap}
+.glance .total td{border-top:2px solid var(--ink);font-weight:650}
+.trouble td:first-child,.trouble th:first-child{width:36%}
+
+/* code */
+code,samp{font-family:var(--mono);font-size:.86em}
+:not(pre)>code{background:var(--code-bg);border:1px solid var(--rule);border-radius:4px;padding:.08em .36em;white-space:nowrap}
+:not(pre)>code.wrap{white-space:normal;overflow-wrap:break-word}
+@media (max-width:26rem){:not(pre)>code{white-space:normal;overflow-wrap:break-word}}
+.code{margin:1.3rem 0;border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--code-bg)}
+.code-bar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.35rem .5rem .35rem .95rem;border-bottom:1px solid var(--rule);background:var(--wash);font:600 .82rem/1.4 var(--sans);color:var(--muted)}
+.code pre{margin:0;padding:.95rem 1rem;overflow:auto;font:.86rem/1.6 var(--mono);tab-size:2;color:var(--ink)}
+.code pre code{font-size:1em}
+.code[data-wrap] pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.copy{font:600 .8rem var(--sans);border:1px solid var(--rule);background:var(--page);color:var(--ink);border-radius:6px;padding:.3rem .7rem;cursor:pointer;transition:border-color .15s,color .15s}
+.copy:hover{border-color:var(--accent);color:var(--accent)}
+.k{color:var(--k);font-weight:600}
+.s{color:var(--s)}
+.c{color:var(--c);font-style:italic}
+.n{color:var(--n)}
+.t{color:var(--t)}
+.f{color:var(--f)}
+
+/* notes */
+.note{border-left:4px solid var(--accent);background:var(--accent-wash);padding:.8rem 1.05rem;margin:1.4rem 0;border-radius:0 6px 6px 0;font:.96rem/1.55 var(--sans)}
+.note p{margin:0 0 .6rem}
+.note p:last-child{margin:0}
+.note.warn{border-left-color:#b45f00;background:var(--wip-bg);color:var(--wip-ink)}
+
+/* lists */
+ul,ol{margin:0 0 1rem;padding-left:1.4rem}
+li{margin:.3rem 0}
+.reqs{list-style:none;padding:0;margin:1rem 0;counter-reset:r;border-top:1px solid var(--rule)}
+.reqs li{counter-increment:r;display:grid;grid-template-columns:2.7rem 1fr;gap:0 .4rem;padding:.8rem 0;margin:0;border-bottom:1px solid var(--rule)}
+.reqs li::before{content:"R" counter(r);font:700 .9rem/1.9 var(--sans);color:var(--accent)}
+.steps{counter-reset:st;list-style:none;padding:0}
+.steps>li{counter-increment:st;display:grid;grid-template-columns:2rem 1fr;gap:0 .3rem;margin:.9rem 0}
+.steps>li::before{content:counter(st) ".";font:700 1rem/1.65 var(--sans);color:var(--accent)}
+.steps>li>*{grid-column:2}
+.steps>li>.code{margin:.5rem 0 0}
+
+/* questions */
+.quiz{list-style:none;padding:0;margin:1.5rem 0}
+.quiz>li{padding:1.3rem 0;margin:0;border-top:1px solid var(--rule)}
+.quiz h4{margin:0 0 .5rem}
+.opts{list-style:upper-alpha;margin:.4rem 0 0;padding-left:1.8rem}
+.opts li::marker{font:700 .95rem var(--sans);color:var(--accent)}
+.quiz .code{margin:.7rem 0}
+
+/* progress board */
+.board{list-style:none;margin:1.1rem 0 .6rem;padding:0;border-top:1px solid var(--rule)}
+.board li{display:grid;grid-template-columns:7.4rem 1fr;gap:.2rem 1rem;align-items:start;padding:.7rem 0;margin:0;border-bottom:1px solid var(--rule)}
+.status{font:650 .82rem/1 var(--mono);border:1px solid transparent;border-radius:999px;padding:.45rem .7rem;width:100%;text-align:center;cursor:pointer;transition:background-color .15s,color .15s}
+.status[data-state="todo"]{background:var(--todo-bg);color:var(--todo-ink)}
+.status[data-state="in-progress"]{background:var(--wip-bg);color:var(--wip-ink)}
+.status[data-state="done"]{background:var(--done-bg);color:var(--done-ink)}
+.status:hover{border-color:currentColor}
+.status:disabled{cursor:default}
+.status:disabled:hover{border-color:transparent}
+.what{font:.97rem/1.55 var(--serif);padding-top:.1rem}
+.summary{font:.92rem/1.5 var(--sans);color:var(--muted)}
+@media (max-width:30rem){.board li{grid-template-columns:1fr}.status{width:8.5rem}}
+
+@media (max-width:40rem){
+  .table-wrap{overflow:visible}
+  table,thead,tbody,tr,td{display:block;width:auto}
+  thead{position:absolute;left:-9999px}
+  tr{padding:.75rem 0;border-bottom:1px solid var(--rule)}
+  td{border:0;padding:.12rem 0}
+  td[data-label]::before{content:attr(data-label);display:block;font:650 .78rem/1.4 var(--sans);color:var(--muted);margin-top:.35rem}
+  td:first-child{font-weight:650}
+  td:first-child::before{display:none}
+  .glance td:last-child,.trouble td:first-child{width:auto;white-space:normal}
+  .glance .total{border-top:2px solid var(--ink)}
+  .glance .total td{border-top:0}
+}
+
+footer{margin-top:4.5rem;padding-top:1.2rem;border-top:1px solid var(--rule);font:.86rem/1.6 var(--sans);color:var(--muted)}
+footer p{margin:0 0 .4rem}
+
+@media print{
+  :root{--page:#fff;--wash:#fff;--ink:#000;--muted:#333;--rule:#aaa;--accent:#000;--accent-wash:#fff;--code-bg:#fff;--on-accent:#fff;--k:#000;--s:#000;--c:#333;--n:#000;--t:#000;--f:#000}
+  body{font-size:11pt}
+  .rail,.copy,.skip{display:none!important}
+  .shell{display:block;padding:0}
+  .terminal pre{background:#fff;color:#000;border:1px solid #000}
+  .terminal .prompt,.terminal .st-todo,.terminal .st-wip,.terminal .st-done{color:#000}
+  .code,.quiz>li,tr,.board li,.reqs li{break-inside:avoid}
+  h2,h3,h4{break-after:avoid}
+  a{color:#000;text-decoration:none}
+  .tag.bonus{background:none;color:#000}
+  .status{border:1px solid #000;background:none!important;color:#000!important}
+  .note,.note.warn{background:none;color:#000}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the assignment</a>
+<div class="shell">
+
+<aside class="rail">
+  <nav aria-label="Contents">
+    <details id="toc" open>
+      <summary>Contents</summary>
+      <ol>
+        <li><a href="#terms">Abbreviations and Key Terms</a></li>
+        <li><a href="#assignment">The assignment</a>
+          <ul>
+            <li><a href="#start">Where to start</a></li>
+            <li><a href="#requirements">Requirements</a></li>
+            <li><a href="#shape">Suggested shape</a></li>
+            <li><a href="#screenshots">Screenshots</a></li>
+          </ul>
+        </li>
+        <li><a href="#bonus-undo">Bonus 1: Undo</a></li>
+        <li><a href="#bonus-tests">Bonus 2: Tests</a></li>
+        <li><a href="#bonus-explain">Bonus 3: Explain your reducer</a></li>
+        <li><a href="#bonus-repo">Bonus 4: Git repository</a></li>
+        <li><a href="#submit">Submit your work</a>
+          <ul>
+            <li><a href="#checklist">Checklist</a></li>
+            <li><a href="#rules">Rules that apply</a></li>
+          </ul>
+        </li>
+        <li><a href="#troubleshooting">Troubleshooting</a></li>
+      </ol>
+    </details>
+  </nav>
+</aside>
+
+<main id="main">
+
+<header class="hero">
+  <p class="course">MIS 233 Web Based Application Programming, Fall 2026, Week 5</p>
+  <h1>Assignment 3:<br>Task Manager with a Reducer</h1>
+  <p class="lede">Take the sample Task Manager and grow its reducer: the state gets a status filter, a new action clears finished tasks, and the screen shows live counts. Everything goes through <code>useReducer</code>. It is worth 100 points. Every optional part is a bonus worth 5 points or more, depending on the implementation. There are four, and you may do any of them.</p>
+
+  <dl class="facts">
+    <dt>Format</dt>
+    <dd>Individual assignment.</dd>
+    <dt>Language</dt>
+    <dd>TypeScript and React. A plain JavaScript solution is not accepted.</dd>
+    <dt>Source</dt>
+    <dd>The sample Task Manager in <code>starter/</code> and the reducer part of the Week 5 slides.</dd>
+    <dt>Deadline</dt>
+    <dd>Set in Moodle (the course platform) when the assignment is posted.</dd>
+    <dt>Points</dt>
+    <dd>100 for the assignment and 5 or more for each of the four bonuses: 120 or more in total.</dd>
+  </dl>
+</header>
+
+<h2 id="terms">Abbreviations and Key Terms</h2>
+<dl class="terms">
+  <div><dt>action</dt><dd>A plain object that describes what happened, such as <code>{ type: 'remove', id }</code>. The reducer decides what it means.</dd></div>
+  <div><dt>AI</dt><dd>Artificial Intelligence, as in AI coding assistants.</dd></div>
+  <div><dt>derived state</dt><dd>A value you compute from state while rendering, such as the filtered list, instead of storing it.</dd></div>
+  <div><dt>discriminated union</dt><dd>A TypeScript type made of several object types that each have a different <code>type</code> string, so the compiler knows which other fields exist.</dd></div>
+  <div><dt>dispatch</dt><dd>The function <code>useReducer</code> returns. You call it with an action to ask the reducer for a state change.</dd></div>
+  <div><dt>Moodle</dt><dd>The course platform: you download materials and upload assignments there.</dd></div>
+  <div><dt>npm</dt><dd>Node Package Manager, which installs packages and runs project scripts.</dd></div>
+  <div><dt>pure function</dt><dd>A function whose result depends only on its arguments and which changes nothing outside itself.</dd></div>
+  <div><dt>reducer</dt><dd>A pure function <code>(state, action) =&gt; nextState</code> that holds all the rules for changing state.</dd></div>
+  <div><dt>TS</dt><dd>TypeScript, JavaScript with static types.</dd></div>
+  <div><dt>Vite</dt><dd>The build tool and development server used by the course projects.</dd></div>
+  <div><dt>Vitest</dt><dd>A test runner that works with Vite projects.</dd></div>
+</dl>
+
+<h2 id="assignment">The assignment <span class="tag req">Required, 100 points</span></h2>
+<p>The sample reducer keeps a plain array of tasks. In this assignment the state becomes an object with two fields, the tasks and the chosen filter, and the reducer learns two new actions. You add a filter bar (All, To do, In progress, Done) with the number of tasks each button would show. The state stays in <code>App</code> with <code>useReducer</code> and goes down as props, as in the sample. Do not use Context or a state library in this assignment.</p>
+
+<div class="table-wrap">
+<table class="glance">
+  <thead><tr><th>Part</th><th>You hand in</th><th>Points</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Part">The assignment</td><td data-label="You hand in">a zip of the project (the code) and four screenshots</td><td data-label="Points">100</td></tr>
+    <tr><td data-label="Part">Bonus 1: Undo</td><td data-label="You hand in">an <code>undo</code> action and a button</td><td data-label="Points">5+</td></tr>
+    <tr><td data-label="Part">Bonus 2: tests</td><td data-label="You hand in">test files and a passing <code>npm test</code></td><td data-label="Points">5+</td></tr>
+    <tr><td data-label="Part">Bonus 3: explain your reducer</td><td data-label="You hand in">a section in <code>README.md</code></td><td data-label="Points">5+</td></tr>
+    <tr><td data-label="Part">Bonus 4: Git repository</td><td data-label="You hand in">a repository link in <code>README.md</code></td><td data-label="Points">5+</td></tr>
+    <tr class="total"><td data-label="Part">Total with all four bonuses</td><td data-label="You hand in">everything above</td><td data-label="Points">120+</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Every optional part is a bonus. A bonus is worth 5 points, and more when your implementation goes further than the minimum. The instructor decides the exact number from your implementation: how much you build, how correct it is, and how well you understand it. Bonus points are added to the score of this assignment.</p>
+
+<h3 id="start">Where to start</h3>
+<p>The sample is a complete project in the <code>starter/</code> folder that comes with this handout. Nothing to generate or copy: open a terminal in the folder and run these commands. You need Node.js 20.19 or newer.</p>
+<div class="code" data-lang="sh"><div class="code-bar"><span>Terminal</span><button class="copy" type="button" hidden>Copy</button></div><pre tabindex="0"><code>npm install
+npm run dev</code></pre></div>
+<p>It is a small Task Manager with a reducer, a row component and an app that keeps the state with <code>useReducer</code>. It also has a <code>filter.ts</code> for you to fill in. Work inside this project and build on it.</p>
+<p>This is the sample reducer (<code>src/taskReducer.ts</code>). You will change it. The <code>Action</code> type is a discriminated union, and a reducer must stay pure: the caller creates the id with <code>crypto.randomUUID()</code>, not the reducer.</p>
+<div class="code" data-lang="ts"><div class="code-bar"><span>src/taskReducer.ts (the sample)</span><button class="copy" type="button" hidden>Copy</button></div><pre tabindex="0"><code>export type Status = 'todo' | 'in-progress' | 'done'
+export type Task = { id: string; title: string; status: Status }
+
+export type Action =
+  | { type: 'add'; id: string; title: string }
+  | { type: 'advance'; id: string }
+  | { type: 'remove'; id: string }
+
+const NEXT: Record&lt;Status, Status&gt; = {
+  todo: 'in-progress',
+  'in-progress': 'done',
+  done: 'todo',
+}
+
+export function taskReducer(tasks: Task[], action: Action): Task[] {
+  switch (action.type) {
+    case 'add':
+      return [...tasks, { id: action.id, title: action.title, status: 'todo' }]
+    case 'advance':
+      return tasks.map((t) =&gt;
+        t.id === action.id ? { ...t, status: NEXT[t.status] } : t,
+      )
+    case 'remove':
+      return tasks.filter((t) =&gt; t.id !== action.id)
+  }
+}</code></pre></div>
+
+<h3 id="requirements">Requirements</h3>
+<p>Your solution meets all seven requirements.</p>
+<ol class="reqs">
+  <li><div>Change the state from <code>Task[]</code> to an object: <code>type State = { tasks: Task[]; filter: Filter }</code>, where <code>Filter</code> is <code>'all'</code>, <code>'todo'</code>, <code>'in-progress'</code> or <code>'done'</code>. Export <code>State</code>, an <code>initialState</code> (no tasks, filter <code>'all'</code>) and the reducer <code>taskReducer(state: State, action: Action): State</code>. <code>App</code> uses <code>useReducer(taskReducer, initialState)</code>.</div></li>
+  <li><div>Keep the three existing actions (<code>add</code>, <code>advance</code>, <code>remove</code>), now working on <code>state.tasks</code>, and add two new ones: <code>{ type: 'setFilter'; filter: Filter }</code> and <code>{ type: 'clearDone' }</code>. <code>clearDone</code> removes every task whose status is <code>done</code> and keeps the filter. Add a Clear done button to the screen.</div></li>
+  <li><div>The reducer is pure and complete. It never changes the old state: it returns a new object, and new arrays and new objects for anything that changes. It does not call <code>Math.random()</code>, <code>Date.now()</code> or <code>crypto.randomUUID()</code>. Its <code>switch</code> covers every action type, so TypeScript reports an error if you add an action and forget to handle it.</div></li>
+  <li><div>Write two pure functions in <code>filter.ts</code> with no React in the file: <code>filterTasks(tasks, filter)</code> returns the tasks for the chosen filter (<code>'all'</code> returns every task), and <code>countByFilter(tasks)</code> returns a number for each of <code>all</code>, <code>todo</code>, <code>in-progress</code> and <code>done</code>.</div></li>
+  <li><div>Add a filter bar with four buttons: All, To do, In progress, Done. A click dispatches <code>setFilter</code>. The button of the active filter looks different from the others. The list shows only the tasks that match.</div></li>
+  <li><div>Show the count next to each button, for example <code>In progress (2)</code>. The counts and the visible list are <strong>derived</strong> while rendering with your functions from R4. Never keep a second <code>filteredTasks</code> or <code>counts</code> in state. Everything keeps working with a filter on: you can add, advance and delete, a task that no longer matches the filter leaves the list, and an empty list shows a message such as &ldquo;No tasks here.&rdquo;</div></li>
+  <li><div>The project passes <code>npm run build</code> (which type-checks in strict mode) with no errors, and it uses no <code>any</code>.</div></li>
+</ol>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Action</th><th>Fields</th><th>What the reducer does</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Action"><code>add</code></td><td data-label="Fields"><code>id</code>, <code>title</code></td><td data-label="What the reducer does">appends a task with status <code>todo</code></td></tr>
+    <tr><td data-label="Action"><code>advance</code></td><td data-label="Fields"><code>id</code></td><td data-label="What the reducer does">moves that task to the next status: todo, in-progress, done, then back to todo</td></tr>
+    <tr><td data-label="Action"><code>remove</code></td><td data-label="Fields"><code>id</code></td><td data-label="What the reducer does">deletes that task</td></tr>
+    <tr><td data-label="Action"><code>setFilter</code></td><td data-label="Fields"><code>filter</code></td><td data-label="What the reducer does">stores the chosen filter; the tasks stay the same</td></tr>
+    <tr><td data-label="Action"><code>clearDone</code></td><td data-label="Fields">none</td><td data-label="What the reducer does">deletes every task with status <code>done</code>; the filter stays the same</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3 id="shape">Suggested shape</h3>
+<p>You may organise the files as you like. This is one layout that works.</p>
+<div class="code" data-lang="text" data-nocopy><div class="code-bar"><span>Files</span></div><pre tabindex="0"><code>src/
+  taskReducer.ts      State, Action, initialState, taskReducer (R1 to R3)
+  filter.ts           Filter, filterTasks, countByFilter (R4)
+  TaskRow.tsx         one row: title, status, Next, Delete
+  App.tsx             useReducer; AddForm, FilterBar, TaskList get props</code></pre></div>
+<div class="code" data-lang="sh"><div class="code-bar"><span>Terminal</span><button class="copy" type="button" hidden>Copy</button></div><pre tabindex="0"><code>npm run dev
+npm run build</code></pre></div>
+<div class="note"><p><strong>Hints.</strong> Changing the state shape breaks the sample code in a useful way: follow the compiler errors one by one. In the reducer, use the spread syntax to copy the state and replace only the field that changes, for example <code>{ ...state, filter: action.filter }</code>. Compute <code>filterTasks(state.tasks, state.filter)</code> inside the component while rendering; do not store it.</p></div>
+
+<h3 id="screenshots">Screenshots</h3>
+<p>Add three tasks, advance one to In progress and one to Done, then click each filter. Take one screenshot per filter, four in all, showing the filter bar with its counts and the list. Save them as <code>screenshots/all.png</code>, <code>todo.png</code>, <code>in-progress.png</code> and <code>done.png</code> in your project.</p>
+
+<h2 id="bonus-undo">Bonus 1: Undo <span class="tag bonus">5+ points</span></h2>
+<p>Add an Undo button that reverts the last change to the tasks. This changes the state shape again, which is the point: the reducer is the only place that knows about it.</p>
+<ul>
+  <li>Keep the earlier task lists in the state, for example <code>past: Task[][]</code>. Every action that changes <code>tasks</code> pushes the old list; a new <code>{ type: 'undo' }</code> action pops the last one back. Undo does nothing when there is nothing to undo.</li>
+  <li>Changing the filter is not undoable. Undo after <code>clearDone</code> brings the cleared tasks back.</li>
+  <li>The button is disabled when <code>past</code> is empty.</li>
+</ul>
+<p>Start your answer to this bonus with the line <code>Bonus 1: Undo</code> in <code>README.md</code> and describe your state shape in two or three sentences.</p>
+
+<h2 id="bonus-tests">Bonus 2: Tests <span class="tag bonus">5+ points</span></h2>
+<p>A reducer is a pure function, so it is easy to test without React. Add automated tests and a working <code>npm test</code> with Vitest, the test runner used with Vite.</p>
+<div class="code" data-lang="sh"><div class="code-bar"><span>Terminal</span><button class="copy" type="button" hidden>Copy</button></div><pre tabindex="0"><code>npm i -D vitest</code></pre></div>
+<ul>
+  <li>Tests for <code>taskReducer</code>: every action, plus <code>advance</code> three times returning to <code>todo</code>.</li>
+  <li>A test that the old state is not changed: keep a copy (or freeze it with <code>Object.freeze</code>) and check it after the call.</li>
+  <li>Tests for <code>filterTasks</code> and <code>countByFilter</code>.</li>
+  <li>More points for edge cases: an unknown id, an empty list, <code>clearDone</code> with nothing done, counts after a delete.</li>
+</ul>
+<p>Start your answer with the line <code>Bonus 2: Tests</code> in <code>README.md</code> and show the output of <code>npm test</code>.</p>
+
+<h2 id="bonus-explain">Bonus 3: Explain your reducer <span class="tag bonus">5+ points</span></h2>
+<p>Write a section in <code>README.md</code> titled <code>Bonus 3: Explain your reducer</code> in your own words, about 200 to 300 words. It must cover:</p>
+<ul>
+  <li>Why a reducer must be pure, and what breaks in React if it mutates the old state.</li>
+  <li>Why the caller creates the id and the reducer does not.</li>
+  <li>Why the filtered list and the counts are derived and not stored, with one bug that storing them would cause.</li>
+  <li>One thing that became easier, or harder, when you moved the filter into the reducer state instead of a separate <code>useState</code>.</li>
+</ul>
+
+<h2 id="bonus-repo">Bonus 4: Git repository <span class="tag bonus">5+ points</span></h2>
+<p>Keep your project in a Git repository on GitHub or GitLab and give the instructor access as announced in Moodle. Put the link in <code>README.md</code>.</p>
+<ul>
+  <li>The repository has a <code>.gitignore</code> that leaves out <code>node_modules</code>, and it runs after <code>git clone</code>, <code>npm install</code> and <code>npm run dev</code>.</li>
+  <li>The history shows your work in steps: at least five commits with messages that say what changed, for example <code>Add setFilter action</code>. One commit with everything in it earns little.</li>
+  <li>The four screenshots are in the repository too.</li>
+</ul>
+<p>Start your answer to this bonus with the line <code>Bonus 4: Git repository</code> in <code>README.md</code>, followed by the link.</p>
+
+<h2 id="submit">Submit your work</h2>
+<p>Put your project in one folder named <code>assignment3</code>, zip it, and upload the zip to the Assignment 3 entry on Moodle before the deadline shown there. Leave out <code>node_modules</code>. The zip holds your code and the four screenshots in <code>screenshots/</code>. A repository is not required: it is Bonus 4. Write your full name and student number at the top of <code>README.md</code> and in a comment at the top of <code>taskReducer.ts</code>. The project must run after <code>npm install</code> and <code>npm run dev</code>.</p>
+
+<h3 id="checklist">Checklist</h3>
+<p>Click a status to move it from <code>todo</code> to <code>in-progress</code> to <code>done</code>. The board keeps track of your own progress. It is saved in this browser only, and nothing is sent to anyone.</p>
+<ul class="board" id="board">
+  <li><button class="status" type="button" data-state="todo" disabled>todo</button><span class="what">The state is <code>{{ tasks, filter }}</code>, with <code>initialState</code> and <code>taskReducer(state, action)</code> exported (R1).</span></li>
+  <li><button class="status" type="button" data-state="todo" disabled>todo</button><span class="what"><code>add</code>, <code>advance</code>, <code>remove</code>, <code>setFilter</code> and <code>clearDone</code> all work, and the Clear done button is on screen (R2).</span></li>
+  <li><button class="status" type="button" data-state="todo" disabled>todo</button><span class="what">The reducer never mutates, has no random or time calls, and its <code>switch</code> is exhaustive (R3).</span></li>
+  <li><button class="status" type="button" data-state="todo" disabled>todo</button><span class="what"><code>filter.ts</code> has <code>filterTasks</code> and <code>countByFilter</code>, with no React in it (R4).</span></li>
+  <li><button class="status" type="button" data-state="todo" disabled>todo</button><span class="what">The filter bar has four buttons that dispatch <code>setFilter</code>, the active one looks different, and the list matches (R5).</span></li>
+  <li><button class="status" type="button" data-state="todo" disabled>todo</button><span class="what">Counts show next to each button, are derived, and the empty message shows (R6).</span></li>
+  <li><button class="status" type="button" data-state="todo" disabled>todo</button><span class="what"><code>npm run build</code> passes and there is no <code>any</code> (R7).</span></li>
+  <li><button class="status" type="button" data-state="todo" disabled>todo</button><span class="what">Four screenshots are in <code>screenshots/</code>, and your name and student number are in <code>README.md</code>.</span></li>
+  <li><button class="status" type="button" data-state="todo" disabled>todo</button><span class="what">Bonus 1: Undo works and <code>README.md</code> describes the state shape.</span></li>
+  <li><button class="status" type="button" data-state="todo" disabled>todo</button><span class="what">Bonus 2: <code>npm test</code> passes and <code>README.md</code> shows the output.</span></li>
+  <li><button class="status" type="button" data-state="todo" disabled>todo</button><span class="what">Bonus 3: <code>README.md</code> has the section with the four points.</span></li>
+  <li><button class="status" type="button" data-state="todo" disabled>todo</button><span class="what">Bonus 4: the repository link is in <code>README.md</code>, and the history has at least five commits.</span></li>
+  <li><button class="status" type="button" data-state="todo" disabled>todo</button><span class="what">Everything is in one <code>assignment3</code> folder, without <code>node_modules</code>, zipped and uploaded to Moodle.</span></li>
+</ul>
+<p class="summary" id="board-summary" aria-live="polite"></p>
+
+<h3 id="rules">Rules that apply</h3>
+<ul>
+  <li><strong>Late work.</strong> Up to 3-4 hours after the deadline is accepted without penalty. After that, 25% is deducted for each day, and late work is accepted until the end of the third day after the deadline. Work submitted later is graded out of 0.</li>
+  <li><strong>AI tools.</strong> AI coding assistants are allowed. You must be able to explain and defend every line of code and every sentence you submit. Presenting work you cannot explain as your own is academic dishonesty.</li>
+  <li><strong>Claiming a bonus.</strong> Say which bonuses you did in your own <code>README.md</code>. Give each bonus a heading or a first line with its number and name, for example <code>Bonus 1: Undo</code>. A bonus you do not claim is not graded.</li>
+</ul>
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+<div class="table-wrap">
+<table class="trouble">
+  <thead><tr><th>What you see</th><th>Why, and what to do</th></tr></thead>
+  <tbody>
+    <tr><td data-label="What you see">The list does not update after Add or Next</td><td data-label="Why, and what to do">Something changed state by mutation. The reducer must return a new object with new arrays: <code>[...state.tasks, t]</code>, <code>state.tasks.map(...)</code>, <code>state.tasks.filter(...)</code>.</td></tr>
+    <tr><td data-label="What you see">The counts or the list are wrong after a delete or a change</td><td data-label="Why, and what to do">You probably stored a filtered list or counts in state, and it went stale. Compute them from <code>state.tasks</code> while rendering.</td></tr>
+    <tr><td data-label="What you see"><code class="wrap">Property 'filter' does not exist on type 'Task[]'</code></td><td data-label="Why, and what to do">Some code still treats the state as an array. Use <code>state.tasks</code> and <code>state.filter</code>.</td></tr>
+    <tr><td data-label="What you see"><code class="wrap">Type 'undefined' is not assignable to type 'State'</code></td><td data-label="Why, and what to do">One <code>case</code> in the <code>switch</code> returns nothing, or an action type is not handled. Every branch must return a <code>State</code>.</td></tr>
+    <tr><td data-label="What you see"><code class="wrap">Cannot update a component while rendering a different component</code></td><td data-label="Why, and what to do">You called <code>dispatch</code> during render. Call it only inside event handlers.</td></tr>
+    <tr><td data-label="What you see"><code class="wrap">TS1484</code> or <code class="wrap">verbatimModuleSyntax</code> errors on imports</td><td data-label="Why, and what to do">Import types with <code>import type</code> or <code>import { type Task }</code>.</td></tr>
+    <tr><td data-label="What you see">The Vite page is blank</td><td data-label="Why, and what to do">Open the browser console (F12). A thrown error there is usually an import path typo or code still using the old array state.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<footer>
+  <p>MIS 233 Web Based Application Programming, Boğaziçi University. Based on the Week 5 slides.</p>
+</footer>
+
+</main>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+
+  /* syntax colors, a tiny tokenizer: without JavaScript the code stays plain */
+  var KW = {}, LIT = {}, TYPES = {};
+  ('as async await break case catch class const continue declare default do else enum export extends finally for from function if implements import in instanceof interface keyof let new of readonly return satisfies static switch throw try type typeof var void while yield infer').split(' ').forEach(function (w) { KW[w] = 1; });
+  ('true false null undefined').split(' ').forEach(function (w) { LIT[w] = 1; });
+  ('string number boolean unknown never any object symbol bigint').split(' ').forEach(function (w) { TYPES[w] = 1; });
+
+  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function atLineStart(s, i) { return i === 0 || s.charAt(i - 1) === '\n'; }
+  function afterSpace(s, i) { return i === 0 || /\s/.test(s.charAt(i - 1)); }
+
+  var RULES = {
+    ts: [
+      [/\/\/[^\n]*|\/\*[\s\S]*?\*\//y, function () { return 'c'; }],
+      [/`(?:\\[\s\S]|[^`\\])*`|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'/y, function () { return 's'; }],
+      [/\d+(?:\.\d+)?/y, function () { return 'n'; }],
+      [/[A-Za-z_$][\w$]*/y, function (m) {
+        var w = m[0];
+        if (LIT[w]) return 'n';
+        if (KW[w]) return 'k';
+        return (TYPES[w] || /^[A-Z]/.test(w)) ? 't' : null;
+      }]
+    ],
+    sh: [
+      [/#[^\n]*/y, function (m, s, i) { return afterSpace(s, i) ? 'c' : null; }],
+      [/"(?:\\.|[^"\\\n])*"|'[^'\n]*'/y, function () { return 's'; }],
+      [/--?[A-Za-z][\w-]*/y, function (m, s, i) { return afterSpace(s, i) ? 'f' : null; }],
+      [/[A-Za-z][\w.\/:-]*/y, function (m, s, i) { return atLineStart(s, i) ? 'k' : null; }]
+    ],
+    json: [
+      [/"(?:\\.|[^"\\\n])*"/y, function (m, s, i) {
+        var rest = s.slice(i + m[0].length, i + m[0].length + 20);
+        return /^\s*:/.test(rest) ? 't' : 's';
+      }],
+      [/-?\d+(?:\.\d+)?/y, function () { return 'n'; }],
+      [/true|false|null/y, function () { return 'k'; }]
+    ],
+    md: [
+      [/#{1,6} [^\n]*/y, function (m, s, i) { return atLineStart(s, i) ? 'k' : null; }],
+      [/`[^`\n]*`/y, function () { return 's'; }]
+    ]
+  };
+
+  function lex(src, rules) {
+    var out = '', plain = '', i = 0, n = src.length;
+    while (i < n) {
+      var hit = false;
+      for (var r = 0; r < rules.length; r++) {
+        var re = rules[r][0];
+        re.lastIndex = i;
+        var m = re.exec(src);
+        if (m && m[0].length) {
+          var cls = rules[r][1](m, src, i);
+          if (cls) {
+            if (plain) { out += esc(plain); plain = ''; }
+            out += '<span class="' + cls + '">' + esc(m[0]) + '</span>';
+          } else {
+            plain += m[0];
+          }
+          i += m[0].length;
+          hit = true;
+          break;
+        }
+      }
+      if (!hit) { plain += src.charAt(i); i++; }
+    }
+    if (plain) out += esc(plain);
+    return out;
+  }
+
+  /* copy buttons */
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) { return navigator.clipboard.writeText(text); }
+    return new Promise(function (resolve, reject) {
+      var t = document.createElement('textarea');
+      t.value = text;
+      t.setAttribute('readonly', '');
+      t.style.position = 'fixed';
+      t.style.opacity = '0';
+      document.body.appendChild(t);
+      t.select();
+      try { if (document.execCommand('copy')) { resolve(); } else { reject(); } } catch (e) { reject(e); }
+      document.body.removeChild(t);
+    });
+  }
+
+  try {
+    $$('.code').forEach(function (box) {
+      var code = $('pre code', box);
+      var lang = box.getAttribute('data-lang');
+      if (code && RULES[lang]) { code.innerHTML = lex(code.textContent, RULES[lang]); }
+      var btn = $('.copy', box);
+      if (btn && code) {
+        btn.hidden = false;
+        var label = ($('.code-bar span', box) || {}).textContent || 'code';
+        btn.setAttribute('aria-label', 'Copy ' + label);
+        btn.addEventListener('click', function () {
+          copyText(code.textContent).then(function () { btn.textContent = 'Copied'; }, function () { btn.textContent = 'Select and copy'; });
+          setTimeout(function () { btn.textContent = 'Copy'; }, 1600);
+        });
+      }
+    });
+  } catch (e) { /* the page stays readable without colors or copy buttons */ }
+
+  /* contents: open on wide screens, closed on narrow ones; mark the current section */
+  try {
+    var toc = $('#toc');
+    var wide = window.matchMedia('(min-width: 62.5rem)');
+    var syncToc = function () { if (toc) { toc.open = wide.matches; } };
+    syncToc();
+    if (wide.addEventListener) { wide.addEventListener('change', syncToc); }
+
+    if ('IntersectionObserver' in window) {
+      var links = {};
+      $$('.rail a').forEach(function (a) { links[a.getAttribute('href').slice(1)] = a; });
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) { return; }
+          $$('.rail a[aria-current]').forEach(function (a) { a.removeAttribute('aria-current'); });
+          var a = links[e.target.id];
+          if (a) { a.setAttribute('aria-current', 'true'); }
+        });
+      }, { rootMargin: '0px 0px -75% 0px' });
+      $$('main h2[id], main h3[id]').forEach(function (h) { if (links[h.id]) { io.observe(h); } });
+    }
+  } catch (e) { /* navigation still works as plain links */ }
+
+  /* progress board: the checklist items use the same three statuses as the Task type */
+  try {
+    var KEY = 'mis233-assignment3-board-v1';
+    var saved = {};
+    try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { saved = {}; }
+    var NEXT = { 'todo': 'in-progress', 'in-progress': 'done', 'done': 'todo' };
+    var buttons = $$('#board .status');
+    var summary = $('#board-summary');
+
+    function paint() {
+      var count = { 'todo': 0, 'in-progress': 0, 'done': 0 };
+      buttons.forEach(function (b) { count[b.getAttribute('data-state')]++; });
+      if (summary) { summary.textContent = 'Progress: ' + count['done'] + ' done, ' + count['in-progress'] + ' in-progress, ' + count['todo'] + ' todo.'; }
+    }
+    function set(b, state) {
+      b.setAttribute('data-state', state);
+      b.textContent = state;
+      var what = b.parentNode.querySelector('.what');
+      b.setAttribute('aria-label', (what ? what.textContent + ' ' : '') + 'Status: ' + state + '. Activate to change.');
+    }
+    buttons.forEach(function (b, i) {
+      b.disabled = false;
+      set(b, NEXT[saved[i]] ? saved[i] : 'todo');
+      b.addEventListener('click', function () {
+        var next = NEXT[b.getAttribute('data-state')];
+        set(b, next);
+        saved[i] = next;
+        try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) { /* private window: skip saving */ }
+        paint();
+      });
+    });
+    paint();
+  } catch (e) { /* the checklist stays a static list */ }
+})();
+</script>
+</body>
+</html>
+

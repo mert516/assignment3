@@ -5,18 +5,6 @@ export type Filter = 'all' | Status
 
 export const FILTERS: Filter[] = ['all', 'todo', 'in-progress', 'done']
 
-const LABEL: Record<Filter, string> = {
-  all: 'All',
-  todo: 'To do',
-  'in-progress': 'In progress',
-  done: 'Done',
-}
-
-/** Human-readable label of a filter, for the filter bar buttons. */
-export function filterLabel(filter: Filter): string {
-  return LABEL[filter]
-}
-
 /** Return the tasks to show for the chosen filter. 'all' returns every task. */
 export function filterTasks(tasks: Task[], filter: Filter): Task[] {
   if (filter === 'all') return [...tasks]

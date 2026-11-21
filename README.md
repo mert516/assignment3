@@ -1,5 +1,5 @@
-Ad Soyad: [İsim Soyisim]
-Öğrenci No: [Öğrenci Numarası]
+Ad Soyad: Mehmet Mert Kaya
+Öğrenci No: 2024502147
 
 # Assignment 3 starter (sample Task Manager)
 
@@ -52,7 +52,15 @@ Keeping the filter inside the reducer state instead of a separate `useState` mad
 
 ## Bonus 4: Git repository
 
-The project is kept in a Git repository with at least five commits describing each step (for example `Add setFilter action`, `Add Clear done button`, `Add Vitest tests`). Repository link: `https://github.com/<kullanici-adi>/assignment3`
+The project is kept in a Git repository on GitHub or GitLab and gives the instructor access as announced in Moodle.
 
-Replace `<kullanici-adi>` with your own username, create the repository, push the code (without `node_modules`), and give the instructor access as announced on Moodle.
+- The repository has a `.gitignore` that leaves out `node_modules`, and it runs after `git clone`, `npm install` and `npm run dev`.
+- The history shows your work in steps: at least five commits with messages that say what changed, for example `Add setFilter action`. One commit with everything in it earns little.
+- The four screenshots are in the repository too.
+
+Start your answer to this bonus with the line `Bonus 4: Git repository` in `README.md`, followed by the link.
+
+Repository link: https://github.com/mehmettkaya/assignment3
+
+Replace `<kullanici-adi>` with your own username, create the repository, push the code (without `node_modules`), and give the instructor access as announced in Moodle.
 Zip the whole folder without `node_modules` when you hand in.

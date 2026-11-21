@@ -1,5 +1,5 @@
-// Ad Soyad: [İsminiz]
-// Öğrenci No: [Öğrenci Numaranız]
+// Ad Soyad: Mehmet Mert Kaya
+// Öğrenci No: 2024502147
 
 import type { Filter } from './filter'
 
@@ -25,8 +25,7 @@ const NEXT: Record<Status, Status> = {
   done: 'todo',
 }
 
-/** Return a new state whose tasks changed: remember the old list for undo.
- *  If nothing actually changed, return the state untouched. */
+// Remember the old list so we can undo later.
 function changed(state: State, nextTasks: Task[]): State {
   const same =
     nextTasks.length === state.tasks.length &&

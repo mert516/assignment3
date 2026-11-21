@@ -8,7 +8,7 @@ import {
   type Task,
   initialState,
 } from './taskReducer'
-import { FILTERS, countByFilter, filterTasks, filterLabel, type Filter } from './filter'
+import { FILTERS, countByFilter, filterTasks, type Filter } from './filter'
 import TaskRow from './TaskRow'
 import type { Dispatch } from 'react'
 
@@ -51,7 +51,7 @@ function FilterBar({
             cursor: 'pointer',
           }}
         >
-          {filterLabel(f)} ({counts[f]})
+          {f === 'all' ? 'All' : f === 'todo' ? 'To do' : f === 'in-progress' ? 'In progress' : 'Done'} ({counts[f]})
         </button>
       ))}
       <button
